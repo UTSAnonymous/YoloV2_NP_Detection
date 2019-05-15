@@ -50,4 +50,7 @@ options = trainingOptions('sgdm', ...
     'Shuffle','every-epoch');
 
 % Train yolo v2 detector
-[detector,info] = trainYOLOv2ObjectDetector(trainds,lgraph,options)
+[npNet1,info] = trainYOLOv2ObjectDetector(trainds,lgraph,options)
+
+% Save the trained network
+save npNet1
