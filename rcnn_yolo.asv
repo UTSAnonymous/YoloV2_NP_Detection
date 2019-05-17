@@ -61,29 +61,20 @@ save npNet1
 data = load('npNet1.mat')
 
 %%
-detector = data.npNet1;
+i = imread(valds(1))
 
-% Read a test image.
-I = imread(valds.imageFilename{5});
-
-% Run the detector.
-[bboxes,scores] = detect(detector,I);
-
-% Annotate detections in the image.
-I = insertObjectAnnotation(I,'rectangle',bboxes,scores,'numberplate');
-imshow(I)
 
 %%
+
 numImages = height(valds);
 results = table('Size',[numImages 3],...
     'VariableTypes',{'cell','cell','cell'},...
     'VariableNames',{'Boxes','Scores','Labels'});
 
-
 % Run detector on each image in the test set and collect results.
 for i = 1:numImages
         % Read the image.
-    I = imread(valds.imageFilename{i});
+    I = imread(val_data.numberplate_dataset{i});
         % Run the detector.
     [bboxes,scores,labels] = detect(detector,I);
        % Collect the results.

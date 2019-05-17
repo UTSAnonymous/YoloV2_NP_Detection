@@ -4,7 +4,7 @@
 
 %% Create a matlab .mat file for our dataset 
 
-path_to_data ='/media/nicholas/SSD/Uni/2019/Autumn/Neural Networks and Fuzzy Logic/Final Project/UFPR-ALPR dataset/testing';
+path_to_data ='D:\UFPR-ALPR\UFPR-ALPR dataset\validation';
 
 imds = imageDatastore( path_to_data,'IncludeSubfolders',true);
 imageFilename = imds.Files;
@@ -54,7 +54,7 @@ size(numplate)
 
 numberplate_dataset = table(imageFilename, numplate)
 
-save numplateTestDataset numberplate_dataset
+save numplateValDataset numberplate_dataset
 
 summary(numberplate_dataset)
 
