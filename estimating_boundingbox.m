@@ -4,7 +4,7 @@
 %% load numplate training data
 
 % load data
-data = load('numplateDataset.mat');
+data = load('numplateTrainingDataset.mat');
 numplateDataset = data.numberplate_dataset;
 
 %summary 

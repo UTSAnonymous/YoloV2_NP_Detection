@@ -1,32 +1,48 @@
 %% Creating the network for training 
 
 % parameters of creating the yolov2 detection r-cnn
-imageSize = [224 224 3];
+imageSize = [1080 1920 3];
 numClasses = 1;
 
 % anchor box size is determine using the estimating_boundingbox script
-anchorBoxes = [49 36;
-               67 23;
-               138 50;
-               98 34];
+anchorBoxes = [98 34; 49 36; 138 50; 67 23];
 
 % use alexnet feature extraction 
 network = resnet50();
 featureLayer = 'activation_49_relu';
 
 % create a new lgraph of alexnet feature extraction and yolov2 r-cnn object
-% detection
+% detectio
+
+
 lgraph = yolov2Layers(imageSize,numClasses,anchorBoxes,network,featureLayer);
 
 % show lgraph
-%analyzeNetwork(lgraph)
+analyzeNetwork(lgraph)
+
+%%
+
+% Add the fullpath to the local vehicle data folder.
+% trainds.imageFilename = fullfile(pwd,trainds.imageFilename{1});
+
+% Read one of the images.
+I = imread(trainds.imageFilename{100});
+
+
+% Insert the ROI labels.
+I = insertShape(I,'Rectangle',trainds.numplate{100});
+
+% Resize and display image.
+I = imresize(I,3);
+
+imshow(I)
 
 %% get data from the dataset
 
 % get the 3 data (training, validation and testing)
 train_data = load('numplateTrainingDataset.mat');
 val_data = load('numplateValDataset.mat');
-test_data = load('numplateTestDataset.mat');
+test_data = load('numplateTestingDataset.mat');
 
 trainds = train_data.numberplate_dataset;
 valds = val_data.numberplate_dataset;
@@ -42,35 +58,36 @@ testds = test_data.numberplate_dataset;
 %   - Shuffle = shuffle the data to distribute it
 %   - Validation Data = prevent overfitting
 
-options = trainingOptions('sgdm', ...
-    'MiniBatchSize', 8, ...
-    'InitialLearnRate', 1e-3, ...
-    'MaxEpochs',10,...
+options = trainingOptions('adam', ...
+    'MiniBatchSize', 1, ...
+    'InitialLearnRate', 1e-6, ...
+    'MaxEpochs',4,...
+    'CheckpointPath', tempdir,...
     'Shuffle','every-epoch');
 
 % Train yolo v2 detector
 [npNet1,info] = trainYOLOv2ObjectDetector(trainds,lgraph,options)
 
+%%
 % Save the trained network
 save npNet1
-
 
 %% Testing
 % Create a table to hold the bounding boxes, scores, and labels output by
 % the detector.     
-data = load('npNet1.mat')
+data = load('npNet1.mat');
 
 %%
-detector = data.npNet1;
+detector = npNet1;
 
 % Read a test image.
-I = imread(valds.imageFilename{5});
+I = imread(trainds.imageFilename{1});
 
 % Run the detector.
 [bboxes,scores] = detect(detector,I);
 
 % Annotate detections in the image.
-I = insertObjectAnnotation(I,'rectangle',bboxes,scores,'numberplate');
+I = insertObjectAnnotation(I,'rectangle',bboxes,scores);
 imshow(I)
 
 %%

@@ -54,7 +54,7 @@ size(numplate)
 
 numberplate_dataset = table(imageFilename, numplate)
 
-save numplateValDataset numberplate_dataset
+save numplateValidationDataset numberplate_dataset
 
 summary(numberplate_dataset)
 
