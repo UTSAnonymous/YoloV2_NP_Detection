@@ -28,7 +28,7 @@ title("Box area vs. Aspect ratio")
 %% cluster ground truth boxes
 
 % Select the number of anchor boxes.
-numAnchors = 4;
+numAnchors = 20;
 
 % Cluster using K-Medoids.
 [clusterAssignments, anchorBoxes, sumd] = kmedoids(allBoxes(:,3:4),numAnchors,'Distance',@iouDistanceMetric);

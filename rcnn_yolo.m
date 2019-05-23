@@ -1,5 +1,5 @@
 %% Creating the network for training 
-
+disp('creating the network')
 % parameters of creating the yolov2 detection r-cnn
 imageSize = [1080 1920 3];
 numClasses = 1;
@@ -12,16 +12,25 @@ network = resnet50();
 featureLayer = 'activation_49_relu';
 
 % create a new lgraph of alexnet feature extraction and yolov2 r-cnn object
-% detectio
-
-
+% detection
 lgraph = yolov2Layers(imageSize,numClasses,anchorBoxes,network,featureLayer);
 
 % show lgraph
 analyzeNetwork(lgraph)
 
-%%
+%% get data from the dataset
+disp('getting data')
+% get the 3 data (training, validation and testing)
+train_data = load('numplateTrainingDataset.mat');
+val_data = load('numplateValDataset.mat');
+test_data = load('numplateTestingDataset.mat');
 
+trainds = train_data.numberplate_dataset(1:500,:);
+valds = val_data.numberplate_dataset;
+testds = test_data.numberplate_dataset;
+
+%%
+disp('showing image')
 % Add the fullpath to the local vehicle data folder.
 % trainds.imageFilename = fullfile(pwd,trainds.imageFilename{1});
 
@@ -37,20 +46,9 @@ I = imresize(I,3);
 
 imshow(I)
 
-%% get data from the dataset
-
-% get the 3 data (training, validation and testing)
-train_data = load('numplateTrainingDataset.mat');
-val_data = load('numplateValDataset.mat');
-test_data = load('numplateTestingDataset.mat');
-
-trainds = train_data.numberplate_dataset;
-valds = val_data.numberplate_dataset;
-testds = test_data.numberplate_dataset;
-
 
 %% Training of the data 
-
+disp('begnningin training')
 % TRAINING OPTION/ SETTINGS
 %   - sgdm = stochastic gradient descent
 %   - Batch size = 10
@@ -58,9 +56,9 @@ testds = test_data.numberplate_dataset;
 %   - Shuffle = shuffle the data to distribute it
 %   - Validation Data = prevent overfitting
 
-options = trainingOptions('adam', ...
-    'MiniBatchSize', 1, ...
-    'InitialLearnRate', 1e-6, ...
+options = trainingOptions('sgdm', ...
+    'MiniBatchSize', 2, ...
+    'InitialLearnRate', 1e-2, ...
     'MaxEpochs',4,...
     'CheckpointPath', tempdir,...
     'Shuffle','every-epoch');
@@ -70,28 +68,31 @@ options = trainingOptions('adam', ...
 
 %%
 % Save the trained network
-save npNet1
+disp('saving')
+save('npNet1', npNet1)
 
 %% Testing
 % Create a table to hold the bounding boxes, scores, and labels output by
 % the detector.     
-data = load('npNet1.mat');
+data = load('npNet2.mat');
 
 %%
-detector = npNet1;
+detector = npNet2;
 
 % Read a test image.
-I = imread(trainds.imageFilename{1});
+I = imread(trainds.imageFilename{100});
 
 % Run the detector.
 [bboxes,scores] = detect(detector,I);
 
 % Annotate detections in the image.
-I = insertObjectAnnotation(I,'rectangle',bboxes,scores);
+I = insertObjectAnnotation(I,'rectangle',bboxes,'numplate');
 imshow(I)
 
 %%
-numImages = height(valds);
+disp('running Validation')
+
+numImages = 100;
 results = table('Size',[numImages 3],...
     'VariableTypes',{'cell','cell','cell'},...
     'VariableNames',{'Boxes','Scores','Labels'});
@@ -100,17 +101,19 @@ results = table('Size',[numImages 3],...
 % Run detector on each image in the test set and collect results.
 for i = 1:numImages
         % Read the image.
-    I = imread(valds.imageFilename{i});
+    I = imread(trainds.imageFilename{100+i});
         % Run the detector.
-    [bboxes,scores,labels] = detect(detector,I);
+    [bboxes,scores,labels] = detect(npNet2,I);
        % Collect the results.
     results.Boxes{i} = bboxes;
     results.Scores{i} = scores;
     results.Labels{i} = labels;
+    disp(i)
+    
 end
 
 % Extract expected bounding box locations from test data.
-expectedResults = val_data(:, 2:end);
+expectedResults = trainds(101:200, 2);
 
 % Evaluate the object detector using average precision metric.
 [ap, recall, precision] = evaluateDetectionPrecision(results, expectedResults);
