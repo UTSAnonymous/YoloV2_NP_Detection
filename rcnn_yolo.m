@@ -1,18 +1,31 @@
 %% Creating the network for training 
 disp('creating the network')
 % parameters of creating the yolov2 detection r-cnn
-imageSize = [270 480 3];
+imageSize = [227 227 3];
 numClasses = 1;
 
 % anchor box size is determine using the estimating_boundingbox script
-anchorBoxes = [98 34; 49 36; 138 50; 67 23];
+anchorBoxes = [  
+    27     9
+    17     6
+    10     8
+    14     5
+    20     7
+    38    13
+    21    14
+    13    11
+    23     8
+    29    10
+];
 
 % use alexnet feature extraction 
 network = resnet50();
+
 featureLayer = 'activation_49_relu';
 
 % create a new lgraph of alexnet feature extraction and yolov2 r-cnn object
-% detection
+% % detection
+
 lgraph = yolov2Layers(imageSize,numClasses,anchorBoxes,network,featureLayer);
 
 % show lgraph
@@ -29,22 +42,24 @@ trainds = train_data.train_data.numberplate_dataset;
 valds = val_data.numberplate_dataset;
 testds = test_data.numberplate_dataset;
 
+% augimdsTrain = augmentedImageDatastore([227 227],train_data);
+
+
 %%
-% disp('showing image')
-% % Add the fullpath to the local vehicle data folder.
-% % trainds.imageFilename = fullfile(pwd,trainds.imageFilename{1});
-% 
-% % Read one of the images.
-% I = imread(trainds.imageFilename{100});
-% 
-% 
-% % Insert the ROI labels.
-% I = insertShape(I,'Rectangle',trainds.numplate{100});
-% 
-% % Resize and display image.
+disp('showing image')
+% Add the fullpath to the local vehicle data folder.
+% trainds.imageFilename = fullfile(pwd,trainds.imageFilename{1});
+
+% Read one of the images.
+I = imread(trainds.imageFilename{5});
+
+% Insert the ROI labels.
+I = insertShape(I,'Rectangle',trainds.numplate{5});
+
+% Resize and display image.
 % I = imresize(I,3);
-% 
-% imshow(I)
+
+imshow(I)
 
 
 %% Training of the data 
@@ -57,41 +72,41 @@ disp('begnningin training')
 %   - Validation Data = prevent overfitting
 
 options = trainingOptions('sgdm', ...
-    'MiniBatchSize', 5, ...
+    'MiniBatchSize', 16, ...
     'InitialLearnRate', 1e-3, ...
-    'MaxEpochs',4,...
+    'MaxEpochs',60,...
     'CheckpointPath', tempdir,...
     'Shuffle','every-epoch');
 
 % Train yolo v2 detector
 [npNet1,info] = trainYOLOv2ObjectDetector(trainds,lgraph,options)
-
+%%
 % Save the trained network
 disp('saving')
-save('npNet1', npNet1)
+save npNet1 npNet1 info
 
 %% Testing
 % Create a table to hold the bounding boxes, scores, and labels output by
 % the detector.     
-data = load('npNet2.mat');
+data = load('npNet1.mat');
 
 %%
-detector = npNet2;
+detector = npNet1;
 
 % Read a test image.
-I = imread(trainds.imageFilename{100});
+I = imread(trainds.imageFilename{900});
 
 % Run the detector.
 [bboxes,scores] = detect(detector,I);
 
 % Annotate detections in the image.
-I = insertObjectAnnotation(I,'rectangle',bboxes,'numplate');
+I = insertObjectAnnotation(I,'rectangle',bboxes,scores);
 imshow(I)
 
 %%
 disp('running Validation')
 
-numImages = 100;
+numImages = 900;
 results = table('Size',[numImages 3],...
     'VariableTypes',{'cell','cell','cell'},...
     'VariableNames',{'Boxes','Scores','Labels'});
@@ -100,20 +115,18 @@ results = table('Size',[numImages 3],...
 % Run detector on each image in the test set and collect results.
 for i = 1:numImages
         % Read the image.
-    I = imread(trainds.imageFilename{100+i});
+    I = imread(valds.imageFilename{i});
         % Run the detector.
-    [bboxes,scores,labels] = detect(npNet2,I);
+    [bboxes,scores,labels] = detect(npNet1,I);
        % Collect the results.
     results.Boxes{i} = bboxes;
     results.Scores{i} = scores;
     results.Labels{i} = labels;
     disp(i)
-    
 end
 
 % Extract expected bounding box locations from test data.
-expectedResults = trainds(101:200, 2);
-
+expectedResults = trainds(:,2);
 % Evaluate the object detector using average precision metric.
 [ap, recall, precision] = evaluateDetectionPrecision(results, expectedResults);
 

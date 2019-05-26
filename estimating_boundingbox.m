@@ -4,8 +4,8 @@
 %% load numplate training data
 
 % load data
-data = load('numplateTrainingDataset.mat');
-numplateDataset = data.numberplate_dataset;
+data = load('new_Train_data.mat');
+numplateDataset = data.train_data.numberplate_dataset;
 
 %summary 
 summary(numplateDataset)
@@ -28,7 +28,7 @@ title("Box area vs. Aspect ratio")
 %% cluster ground truth boxes
 
 % Select the number of anchor boxes.
-numAnchors = 20;
+numAnchors = 10;
 
 % Cluster using K-Medoids.
 [clusterAssignments, anchorBoxes, sumd] = kmedoids(allBoxes(:,3:4),numAnchors,'Distance',@iouDistanceMetric);
