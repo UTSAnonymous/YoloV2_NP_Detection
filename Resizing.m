@@ -1,6 +1,6 @@
 %% to resize Images
 %load the data
-train_data = load('numplateValDataset.mat');
+train_data = load('numplateTrainingDataset.mat');
 
 images = train_data.numberplate_dataset.imageFilename;
 
@@ -13,9 +13,9 @@ pause
 for i = 1: x(1)
     image = imread(train_data.numberplate_dataset.imageFilename{i});
     disp(i)
-    image = imresize(image,1/4);
-    % image = pada4rray(image,[280 0],0,'post');
-    filename = sprintf('D:/NNFLValimages/image_%02d.png', i);
+    image = imresize(image,1/2);
+    image = padarray(image,[420 0],0,'post');
+    filename = sprintf('D:/NNFLImages/image_%02d.png', i);
     imwrite(image,filename,'PNG');
     train_data.numberplate_dataset.imageFilename{i} = filename;
 end
@@ -24,7 +24,7 @@ end
 %% change bounding boxes
 
 for i = 1:x(1)   
-    train_data.numberplate_dataset.numplate{i} = round(train_data.numberplate_dataset.numplate{i}./4);
+    train_data.numberplate_dataset.numplate{i} = round(train_data.numberplate_dataset.numplate{i}./2);
 end
 
 save New_Train_data train_data;

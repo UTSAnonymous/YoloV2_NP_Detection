@@ -5,19 +5,8 @@ imageSize = [227 227 3];
 numClasses = 1;
 
 % anchor box size is determine using the estimating_boundingbox script
-anchorBoxes = [  
-    27     9
-    17     6
-    10     8
-    14     5
-    20     7
-    38    13
-    21    14
-    13    11
-    23     8
-    29    10
-];
-
+anchorBoxes = [56 19; 44 29; 79 28;39 14;27 23;46 16;20 15 ; 33 12;28 10 ; 68 23];
+%%
 % use alexnet feature extraction 
 network = resnet50();
 
@@ -27,8 +16,10 @@ featureLayer = 'activation_49_relu';
 % % detection
 
 lgraph = yolov2Layers(imageSize,numClasses,anchorBoxes,network,featureLayer);
-
+%%
 % show lgraph
+analyzeNetwork(lgraph_4)
+
 analyzeNetwork(lgraph)
 
 %% get data from the dataset
@@ -51,10 +42,10 @@ disp('showing image')
 % trainds.imageFilename = fullfile(pwd,trainds.imageFilename{1});
 
 % Read one of the images.
-I = imread(trainds.imageFilename{5});
+I = imread(trainds.imageFilename{50});
 
 % Insert the ROI labels.
-I = insertShape(I,'Rectangle',trainds.numplate{5});
+I = insertShape(I,'Rectangle',trainds.numplate{50});
 
 % Resize and display image.
 % I = imresize(I,3);
@@ -63,7 +54,7 @@ imshow(I)
 
 
 %% Training of the data 
-disp('begnningin training')
+disp('begining training')
 % TRAINING OPTION/ SETTINGS
 %   - sgdm = stochastic gradient descent
 %   - Batch size = 10
@@ -72,14 +63,13 @@ disp('begnningin training')
 %   - Validation Data = prevent overfitting
 
 options = trainingOptions('sgdm', ...
-    'MiniBatchSize', 16, ...
+    'MiniBatchSize', 6, ...
     'InitialLearnRate', 1e-3, ...
     'MaxEpochs',60,...
-    'CheckpointPath', tempdir,...
     'Shuffle','every-epoch');
 
 % Train yolo v2 detector
-[npNet1,info] = trainYOLOv2ObjectDetector(trainds,lgraph,options)
+[npNet1,info] = trainYOLOv2ObjectDetector(trainds,lgraph_5,options)
 %%
 % Save the trained network
 disp('saving')
@@ -106,7 +96,7 @@ imshow(I)
 %%
 disp('running Validation')
 
-numImages = 900;
+numImages = 1800;
 results = table('Size',[numImages 3],...
     'VariableTypes',{'cell','cell','cell'},...
     'VariableNames',{'Boxes','Scores','Labels'});
@@ -115,7 +105,7 @@ results = table('Size',[numImages 3],...
 % Run detector on each image in the test set and collect results.
 for i = 1:numImages
         % Read the image.
-    I = imread(valds.imageFilename{i});
+    I = imread(trainds.imageFilename{i});
         % Run the detector.
     [bboxes,scores,labels] = detect(npNet1,I);
        % Collect the results.
