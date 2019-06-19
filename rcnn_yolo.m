@@ -5,7 +5,21 @@ imageSize = [227 227 3];
 numClasses = 1;
 
 % anchor box size is determine using the estimating_boundingbox script
-anchorBoxes = [56 19; 44 29; 79 28;39 14;27 23;46 16;20 15 ; 33 12;28 10 ; 68 23];
+anchorBoxes = [ 38    13
+    60    21
+    34    12
+    79    28
+    46    16
+    31    25
+    28    10
+    42    14
+    26    23
+    44    29
+    32    11
+    20    15
+    55    18
+   102    35
+    70    25];
 %%
 % use alexnet feature extraction 
 network = resnet50();
@@ -26,11 +40,11 @@ analyzeNetwork(lgraph)
 disp('getting data')
 % get the 3 data (training, validation and testing)
 train_data = load('New_Train_data.mat');
-val_data = load('numplateValDataset.mat');
+val_data = load('New_Val_data.mat');
 test_data = load('numplateTestingDataset.mat');
 
 trainds = train_data.train_data.numberplate_dataset;
-valds = val_data.numberplate_dataset;
+valds = val_data.train_data.numberplate_dataset;
 testds = test_data.numberplate_dataset;
 
 % augimdsTrain = augmentedImageDatastore([227 227],train_data);
@@ -62,18 +76,18 @@ disp('begining training')
 %   - Shuffle = shuffle the data to distribute it
 %   - Validation Data = prevent overfitting
 
-options = trainingOptions('sgdm', ...
-    'MiniBatchSize', 6, ...
+options = trainingOptions('adam', ...
+    'MiniBatchSize', 16, ...
     'InitialLearnRate', 1e-3, ...
-    'MaxEpochs',60,...
+    'MaxEpochs',20,...
     'Shuffle','every-epoch');
 
 % Train yolo v2 detector
-[npNet1,info] = trainYOLOv2ObjectDetector(trainds,lgraph_5,options)
+[npNet2,info] = trainYOLOv2ObjectDetector(trainds,npNet2,options)
 %%
 % Save the trained network
 disp('saving')
-save npNet1 npNet1 info
+save npNet2 npNet2
 
 %% Testing
 % Create a table to hold the bounding boxes, scores, and labels output by
@@ -84,19 +98,19 @@ data = load('npNet1.mat');
 detector = npNet1;
 
 % Read a test image.
-I = imread(trainds.imageFilename{900});
+I = imread(trainds.imageFilename{520});
 
 % Run the detector.
 [bboxes,scores] = detect(detector,I);
 
 % Annotate detections in the image.
-I = insertObjectAnnotation(I,'rectangle',bboxes,scores);
+I = insertObjectAnnotation(I,'rectangle',bboxes,'numplate');
 imshow(I)
 
 %%
 disp('running Validation')
 
-numImages = 1800;
+numImages =900;
 results = table('Size',[numImages 3],...
     'VariableTypes',{'cell','cell','cell'},...
     'VariableNames',{'Boxes','Scores','Labels'});
@@ -105,7 +119,7 @@ results = table('Size',[numImages 3],...
 % Run detector on each image in the test set and collect results.
 for i = 1:numImages
         % Read the image.
-    I = imread(trainds.imageFilename{i});
+    I = imread(valds.imageFilename{i});
         % Run the detector.
     [bboxes,scores,labels] = detect(npNet1,I);
        % Collect the results.
@@ -116,8 +130,9 @@ for i = 1:numImages
 end
 
 % Extract expected bounding box locations from test data.
-expectedResults = trainds(:,2);
+expectedResults = valds(:,2);
 % Evaluate the object detector using average precision metric.
+
 [ap, recall, precision] = evaluateDetectionPrecision(results, expectedResults);
 
 % Plot precision/recall curve
